@@ -9,12 +9,12 @@ st.set_page_config(
     page_icon="📝",
     layout="wide"
 )
+
 # Load environment variables from .env file (for local development)
 try:
     load_dotenv()
-    st.sidebar.success("Loaded environment variables from .env file")
 except Exception as e:
-    st.sidebar.info("No .env file found or error loading it. This is normal in cloud deployment.")
+    pass  # Silently continue if .env file doesn't exist
 
 
 def main():
@@ -25,17 +25,26 @@ def main():
     Enter your skills, experience, and the job description to generate content optimized for applicant tracking systems.
     """)
     
-    # Display API key status
+    # Display API key status in sidebar
+    st.sidebar.markdown("### API Key Status")
+    
+    # Get API key from environment variables or Streamlit secrets
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key and hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
-        api_key = st.secrets["OPENAI_API_KEY"]
-        st.sidebar.success("Using API key from Streamlit secrets")
+    if not api_key and hasattr(st, "secrets"):
+        try:
+            api_key = st.secrets["OPENAI_API_KEY"]
+            st.sidebar.success("Using API key from Streamlit secrets")
+        except Exception:
+            st.sidebar.warning("No API key found in Streamlit secrets")
     elif api_key:
         st.sidebar.success("Using API key from environment variables")
     else:
+        st.sidebar.warning("No API key found in environment variables")
+    
+    # Allow user to input API key if not found
+    if not api_key:
         api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
         if not api_key:
-            st.sidebar.error("OpenAI API key required")
             st.info("""
             ### API Key Required
             - **Streamlit Cloud**: Add `OPENAI_API_KEY` in app settings under 'Secrets'.
@@ -103,12 +112,7 @@ def generate_content(api_key, skills, experience, job_description):
     """
     try:
         # Initialize OpenAI client
-        try:
-            client = OpenAI(api_key=api_key)
-            st.sidebar.success("Successfully initialized OpenAI client")
-        except Exception as e:
-            st.error(f"Error initializing OpenAI client: {str(e)}")
-            return None, None
+        client = OpenAI(api_key=api_key)
         
         # Create prompt for the AI
         prompt = f"""
@@ -131,21 +135,15 @@ def generate_content(api_key, skills, experience, job_description):
         """
         
         # Call OpenAI API
-        try:
-            st.sidebar.info("Calling OpenAI API...")
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",  # Using a more widely available model
-                messages=[
-                    {"role": "system", "content": "You are a professional resume and cover letter writer with expertise in creating ATS-optimized content."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=2000,
-                temperature=0.7
-            )
-            st.sidebar.success("Successfully received response from OpenAI API")
-        except Exception as e:
-            st.error(f"Error calling OpenAI API: {str(e)}")
-            return None, None
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",  # Using a more widely available model
+            messages=[
+                {"role": "system", "content": "You are a professional resume and cover letter writer with expertise in creating ATS-optimized content."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=2000,
+            temperature=0.7
+        )
         
         # Extract and process the response
         content = response.choices[0].message.content
@@ -167,7 +165,6 @@ def generate_content(api_key, skills, experience, job_description):
         
     except Exception as e:
         st.error(f"Error in generating content: {str(e)}")
-        st.exception(e)  # This will display the full traceback
         return None, None
 
 if __name__ == "__main__":
