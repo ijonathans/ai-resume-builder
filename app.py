@@ -3,6 +3,12 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# Set up page configuration
+st.set_page_config(
+    page_title="AI Resume and Cover Letter Builder",
+    page_icon="📝",
+    layout="wide"
+)
 # Load environment variables from .env file (for local development)
 try:
     load_dotenv()
@@ -10,12 +16,6 @@ try:
 except Exception as e:
     st.sidebar.info("No .env file found or error loading it. This is normal in cloud deployment.")
 
-# Set up page configuration
-st.set_page_config(
-    page_title="AI Resume and Cover Letter Builder",
-    page_icon="📝",
-    layout="wide"
-)
 
 def main():
     # App title and description
