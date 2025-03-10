@@ -14,7 +14,7 @@ def main():
     st.markdown("Generate ATS-optimized resumes and cover letters using AI.")
 
     # API key handling
-    api_key = os.getenv("OPENAI_API_KEY")  # From .env or environment
+    api_key = os.getenv("OPENAI_API_KEY") or st.secrets["OPENAI_API_KEY"]
     if not api_key and "OPENAI_API_KEY" in st.secrets:
         api_key = st.secrets["OPENAI_API_KEY"]  # From Streamlit Cloud Secrets
         st.sidebar.success("Using API key from Streamlit Secrets")
