@@ -79,13 +79,17 @@ def generate_content(skills, experience, job_description):
     Generate resume and cover letter using OpenAI API
     """
     try:
-        # Set up OpenAI API key
+        # Try to get API key from environment variables first (for local development)
         api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OpenAI API key not found. Please check your .env file.")
         
-        # Debug: Print the API key (first few characters only)
-        st.write(f"Using API key: {api_key[:7]}...")
+        # If not found in environment, try to get from Streamlit secrets (for Streamlit Cloud)
+        if not api_key and hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENAI_API_KEY"]
+            
+        if not api_key:
+            st.error("OpenAI API key not found. Please add it to your .env file or Streamlit secrets.")
+            st.info("For Streamlit Cloud deployment, add your API key in the app settings under 'Secrets'.")
+            return None, None
         
         # Initialize OpenAI client
         client = OpenAI(api_key=api_key)
