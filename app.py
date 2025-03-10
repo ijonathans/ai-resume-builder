@@ -3,8 +3,12 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (for local development)
+try:
+    load_dotenv()
+    st.sidebar.success("Loaded environment variables from .env file")
+except Exception as e:
+    st.sidebar.info("No .env file found or error loading it. This is normal in cloud deployment.")
 
 # Set up page configuration
 st.set_page_config(
@@ -20,6 +24,25 @@ def main():
     This application helps you create a tailored resume and cover letter using AI.
     Enter your skills, experience, and the job description to generate content optimized for applicant tracking systems.
     """)
+    
+    # Display API key status
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key and hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        st.sidebar.success("Using API key from Streamlit secrets")
+    elif api_key:
+        st.sidebar.success("Using API key from environment variables")
+    else:
+        st.sidebar.error("OpenAI API key not found")
+        st.sidebar.info("Please add your OpenAI API key to Streamlit secrets or .env file")
+        st.info("""
+        ### API Key Required
+        To use this application, you need to provide an OpenAI API key:
+        
+        1. **For Streamlit Cloud deployment**: Add your API key in the app settings under 'Secrets' with the key name `OPENAI_API_KEY`
+        2. **For local development**: Add your API key to a `.env` file with the format `OPENAI_API_KEY=your-key-here`
+        """)
+        return
     
     # Create input fields
     with st.container():
@@ -92,7 +115,12 @@ def generate_content(skills, experience, job_description):
             return None, None
         
         # Initialize OpenAI client
-        client = OpenAI(api_key=api_key)
+        try:
+            client = OpenAI(api_key=api_key)
+            st.sidebar.success("Successfully initialized OpenAI client")
+        except Exception as e:
+            st.error(f"Error initializing OpenAI client: {str(e)}")
+            return None, None
         
         # Create prompt for the AI
         prompt = f"""
@@ -115,15 +143,21 @@ def generate_content(skills, experience, job_description):
         """
         
         # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # or another appropriate model
-            messages=[
-                {"role": "system", "content": "You are a professional resume and cover letter writer with expertise in creating ATS-optimized content."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=2000,
-            temperature=0.7
-        )
+        try:
+            st.sidebar.info("Calling OpenAI API...")
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",  # Using a more widely available model
+                messages=[
+                    {"role": "system", "content": "You are a professional resume and cover letter writer with expertise in creating ATS-optimized content."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=2000,
+                temperature=0.7
+            )
+            st.sidebar.success("Successfully received response from OpenAI API")
+        except Exception as e:
+            st.error(f"Error calling OpenAI API: {str(e)}")
+            return None, None
         
         # Extract and process the response
         content = response.choices[0].message.content
@@ -144,6 +178,7 @@ def generate_content(skills, experience, job_description):
         
     except Exception as e:
         st.error(f"Error in generating content: {str(e)}")
+        st.exception(e)  # This will display the full traceback
         return None, None
 
 if __name__ == "__main__":
