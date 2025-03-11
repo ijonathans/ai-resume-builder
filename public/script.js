@@ -78,8 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingIndicator.style.display = 'flex';
         
         try {
+            console.log('Sending request to API...');
+            
             // Make API request to our serverless function
-            const response = await fetch('/api/generate', {
+            const response = await fetch('/api/index', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -92,15 +94,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             
-            const responseData = await response.json();
+            console.log('Response status:', response.status);
+            
+            // Get the raw text first to debug
+            const rawText = await response.text();
+            console.log('Raw response:', rawText);
+            
+            // Try to parse as JSON
+            let responseData;
+            try {
+                responseData = JSON.parse(rawText);
+                console.log('Parsed response data:', responseData);
+            } catch (e) {
+                console.error('Error parsing JSON response:', e);
+                throw new Error(`Invalid JSON response: ${rawText.substring(0, 100)}...`);
+            }
             
             // Handle Vercel serverless function response format
             if (response.ok) {
-                // Parse the response body if it's a string (Vercel serverless function format)
+                // Parse the response data
                 let data = responseData;
+                
+                // Handle nested response format (if the response is wrapped)
                 if (responseData.body && typeof responseData.body === 'string') {
                     try {
                         data = JSON.parse(responseData.body);
+                        console.log('Parsed body data:', data);
                     } catch (e) {
                         console.error('Error parsing response body:', e);
                     }
@@ -134,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred. Please try again later.');
+            alert(`An error occurred: ${error.message}`);
         } finally {
             // Hide loading indicator
             loadingIndicator.style.display = 'none';
