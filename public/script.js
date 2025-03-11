@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Sending request to API...');
             
             // Make API request to our serverless function
-            const response = await fetch('/api/index', {
+            const response = await fetch('/api', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -96,30 +96,71 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('Response status:', response.status);
             
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                
-                try {
-                    const errorData = JSON.parse(errorText);
-                    alert(`Error: ${errorData.error || 'Failed to generate content'}`);
-                } catch (e) {
-                    alert(`Error: ${errorText || 'Failed to generate content'}`);
-                }
+            // Get the raw text first to debug
+            const rawText = await response.text();
+            console.log('Raw response:', rawText);
+            
+            // Try to parse as JSON
+            let data;
+            try {
+                data = JSON.parse(rawText);
+                console.log('Parsed response data:', data);
+            } catch (e) {
+                console.error('Error parsing JSON response:', e);
+                alert(`Error: Invalid response from server. Please try again later.`);
                 return;
             }
             
-            // Get the response as JSON directly
-            const data = await response.json();
-            console.log('Response data:', data);
-            
-            // Display results
-            resumeText.textContent = data.resume || '';
-            coverLetterText.textContent = data.cover_letter || '';
-            outputSection.style.display = 'block';
-            
-            // Scroll to results
-            outputSection.scrollIntoView({ behavior: 'smooth' });
+            // Check if we have a successful response
+            if (data.statusCode === 200 || response.status === 200) {
+                // Get the actual data
+                let result;
+                
+                if (data.body) {
+                    // Parse the body if it's a string
+                    if (typeof data.body === 'string') {
+                        try {
+                            result = JSON.parse(data.body);
+                        } catch (e) {
+                            console.error('Error parsing response body:', e);
+                            result = { error: 'Failed to parse response' };
+                        }
+                    } else {
+                        result = data.body;
+                    }
+                } else {
+                    // If there's no body, use the response data directly
+                    result = data;
+                }
+                
+                console.log('Final data:', result);
+                
+                // Display results
+                resumeText.textContent = result.resume || '';
+                coverLetterText.textContent = result.cover_letter || '';
+                outputSection.style.display = 'block';
+                
+                // Scroll to results
+                outputSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // Handle error response
+                let errorMessage = 'Failed to generate content';
+                
+                if (data.body && typeof data.body === 'string') {
+                    try {
+                        const bodyData = JSON.parse(data.body);
+                        if (bodyData.error) {
+                            errorMessage = bodyData.error;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing error body:', e);
+                    }
+                } else if (data.error) {
+                    errorMessage = data.error;
+                }
+                
+                alert(`Error: ${errorMessage}`);
+            }
         } catch (error) {
             console.error('Error:', error);
             alert(`An error occurred: ${error.message}`);
