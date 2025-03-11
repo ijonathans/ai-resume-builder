@@ -7,39 +7,51 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        data = json.loads(post_data.decode('utf-8'))
-        
-        # Extract data from request
-        skills = data.get('skills', '')
-        experience = data.get('experience', '')
-        job_description = data.get('job_description', '')
-        
-        # Get API key from environment or request
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key and 'api_key' in data:
-            api_key = data.get('api_key')
-        
-        if not api_key:
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "API key is required"}).encode())
-            return
-            
-        if not all([skills, experience, job_description]):
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "All fields are required"}).encode())
-            return
-            
+def handler(request):
+    if request.method == "OPTIONS":
+        # Handle CORS preflight request
+        headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        }
+        return {"statusCode": 200, "headers": headers, "body": ""}
+    
+    if request.method == "POST":
         try:
+            # Parse request body
+            data = json.loads(request.body)
+            
+            # Extract data from request
+            skills = data.get('skills', '')
+            experience = data.get('experience', '')
+            job_description = data.get('job_description', '')
+            
+            # Get API key from environment or request
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key and 'api_key' in data:
+                api_key = data.get('api_key')
+            
+            if not api_key:
+                return {
+                    "statusCode": 400,
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": json.dumps({"error": "API key is required"})
+                }
+                
+            if not all([skills, experience, job_description]):
+                return {
+                    "statusCode": 400,
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": json.dumps({"error": "All fields are required"})
+                }
+                
             # Initialize OpenAI client
             client = OpenAI(api_key=api_key)
             
@@ -85,23 +97,31 @@ class handler(BaseHTTPRequestHandler):
                 "cover_letter": cover_letter.strip()
             }
             
-            # Send response
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps(result).encode())
-            
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*"
+                },
+                "body": json.dumps(result)
+            }
+                
         except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode())
+            return {
+                "statusCode": 500,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*"
+                },
+                "body": json.dumps({"error": str(e)})
+            }
     
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
+    # Method not allowed
+    return {
+        "statusCode": 405,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": json.dumps({"error": "Method not allowed"})
+    }

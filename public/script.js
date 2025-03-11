@@ -92,18 +92,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             
-            const data = await response.json();
+            const responseData = await response.json();
             
+            // Handle Vercel serverless function response format
             if (response.ok) {
+                // Parse the response body if it's a string (Vercel serverless function format)
+                let data = responseData;
+                if (responseData.body && typeof responseData.body === 'string') {
+                    try {
+                        data = JSON.parse(responseData.body);
+                    } catch (e) {
+                        console.error('Error parsing response body:', e);
+                    }
+                }
+                
                 // Display results
-                resumeText.textContent = data.resume;
-                coverLetterText.textContent = data.cover_letter;
+                resumeText.textContent = data.resume || '';
+                coverLetterText.textContent = data.cover_letter || '';
                 outputSection.style.display = 'block';
                 
                 // Scroll to results
                 outputSection.scrollIntoView({ behavior: 'smooth' });
             } else {
-                alert(`Error: ${data.error || 'Failed to generate content'}`);
+                // Handle error response
+                let errorMessage = 'Failed to generate content';
+                
+                if (responseData.error) {
+                    errorMessage = responseData.error;
+                } else if (responseData.body && typeof responseData.body === 'string') {
+                    try {
+                        const parsedBody = JSON.parse(responseData.body);
+                        if (parsedBody.error) {
+                            errorMessage = parsedBody.error;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing error response body:', e);
+                    }
+                }
+                
+                alert(`Error: ${errorMessage}`);
             }
         } catch (error) {
             console.error('Error:', error);

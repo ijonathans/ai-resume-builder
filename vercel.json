@@ -13,11 +13,15 @@
   "routes": [
     {
       "src": "/api/generate",
-      "dest": "api/generate.py"
+      "dest": "/api/generate.py"
     },
     {
       "src": "/(.*)",
       "dest": "/public/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/public/index.html"
     }
   ]
 }
