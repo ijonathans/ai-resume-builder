@@ -15,17 +15,6 @@ def main():
 
     # API key handling
     api_key = os.getenv("OPENAI_API_KEY") or st.secrets["OPENAI_API_KEY"]
-    if not api_key and "OPENAI_API_KEY" in st.secrets:
-        api_key = st.secrets["OPENAI_API_KEY"]  # From Streamlit Cloud Secrets
-        st.sidebar.success("Using API key from Streamlit Secrets")
-    elif api_key:
-        st.sidebar.success("Using API key from environment")
-    else:
-        api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
-        if not api_key:
-            st.sidebar.error("OpenAI API key required")
-            st.info("Add `OPENAI_API_KEY` to Streamlit Secrets or enter it in the sidebar.")
-            return
     client = OpenAI(api_key=api_key)
 
     # Input fields
