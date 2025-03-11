@@ -3,21 +3,29 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# Load environment variables from .env file (for local development)
+load_dotenv()
+
 def main():
     st.set_page_config(page_title="AI Resume and Cover Letter Builder", page_icon="📝", layout="wide")
     st.title("AI Resume and Cover Letter Builder")
     st.markdown("Generate ATS-optimized resumes and cover letters using AI.")
 
+    # Get API key with proper error handling
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
+        # Try to get from Streamlit secrets
         try:
             api_key = st.secrets["OPENAI_API_KEY"]
-        except KeyError:
+        except (FileNotFoundError, KeyError):
+            # If no secrets file or key not in secrets, ask user for input
             api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
             if not api_key:
                 st.sidebar.error("OpenAI API key required")
                 st.info("Add `OPENAI_API_KEY` to Streamlit Secrets or enter it here.")
                 return
+    
+    # Initialize OpenAI client
     client = OpenAI(api_key=api_key)
 
     with st.container():
