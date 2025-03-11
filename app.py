@@ -3,19 +3,42 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# Load environment variables (optional for local testing; Streamlit Cloud uses Secrets)
+# Load environment variables (optional, for local testing)
 load_dotenv()
 
-# Page configuration
+# Page config (safe to run at startup)
 st.set_page_config(page_title="AI Resume and Cover Letter Builder", page_icon="📝", layout="wide")
+
+# Debug: Confirm app starts
+st.sidebar.write("App initialized successfully")
 
 def main():
     st.title("AI Resume and Cover Letter Builder")
     st.markdown("Generate ATS-optimized resumes and cover letters using AI.")
 
-    # API key handling
-    api_key = os.getenv("OPENAI_API_KEY") or st.secrets["OPENAI_API_KEY"]
-    client = OpenAI(api_key=api_key)
+    # API key handling with debug output
+    api_key = os.getenv("OPENAI_API_KEY")
+    st.sidebar.write(f"Env API Key: {'Set' if api_key else 'Not set'}")
+    if not api_key and "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        st.sidebar.success("Using API key from Streamlit Secrets")
+    elif api_key:
+        st.sidebar.success("Using API key from environment")
+    else:
+        api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
+        st.sidebar.write(f"User API Key: {'Set' if api_key else 'Not set'}")
+        if not api_key:
+            st.sidebar.error("OpenAI API key required")
+            st.info("Add `OPENAI_API_KEY` to Streamlit Secrets or enter it here.")
+            return
+
+    # Initialize OpenAI client
+    try:
+        client = OpenAI(api_key=api_key)
+        st.sidebar.success("OpenAI client initialized")
+    except Exception as e:
+        st.sidebar.error(f"OpenAI init failed: {e}")
+        return
 
     # Input fields
     with st.container():
@@ -65,7 +88,7 @@ def generate_content(client, skills, experience, job_description):
         resume, cover_letter = content.split("---", 1) if "---" in content else (content[:int(len(content)*0.6)], content[int(len(content)*0.6):])
         return resume.strip(), cover_letter.strip()
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Generation error: {e}")
         return None, None
 
 if __name__ == "__main__":
