@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume and Cover Letter Builder</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-alt"></i> AI Resume and Cover Letter Builder</h1>
+            <p>Create a tailored resume and cover letter using AI. Enter your skills, experience, and the job description to generate content optimized for applicant tracking systems.</p>
+        </header>
+
+        <div class="api-key-section">
+            <label for="api-key">OpenAI API Key:</label>
+            <div class="api-key-input">
+                <input type="password" id="api-key" placeholder="Enter your OpenAI API Key">
+                <button id="save-api-key" class="btn">Save Key</button>
+            </div>
+            <p class="api-key-status" id="api-key-status"></p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="skills">Skills:</label>
+                <textarea id="skills" placeholder="e.g., Python, Data Analysis, Project Management"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="experience">Experience:</label>
+                <textarea id="experience" placeholder="e.g., Software Engineer at XYZ Corp (2020-2023): Developed scalable web applications..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="job-description">Job Description:</label>
+                <textarea id="job-description" placeholder="Paste the job description here..."></textarea>
+            </div>
+            
+            <button id="generate-btn" class="btn primary-btn">
+                <i class="fas fa-magic"></i> Generate Resume and Cover Letter
+            </button>
+        </div>
+
+        <div class="output-section" id="output-section" style="display: none;">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="resume">Resume</button>
+                <button class="tab-btn" data-tab="cover-letter">Cover Letter</button>
+            </div>
+            
+            <div class="tab-content">
+                <div id="resume-content" class="tab-pane active">
+                    <div class="output-controls">
+                        <button id="copy-resume" class="btn small-btn"><i class="fas fa-copy"></i> Copy</button>
+                        <button id="download-resume" class="btn small-btn"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                    <div class="output-text" id="resume-text"></div>
+                </div>
+                
+                <div id="cover-letter-content" class="tab-pane">
+                    <div class="output-controls">
+                        <button id="copy-cover-letter" class="btn small-btn"><i class="fas fa-copy"></i> Copy</button>
+                        <button id="download-cover-letter" class="btn small-btn"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                    <div class="output-text" id="cover-letter-text"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating your resume and cover letter...</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 AI Resume Builder | Powered by OpenAI</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
