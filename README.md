@@ -1,6 +1,9 @@
 # AI Resume and Cover Letter Builder
-
 A web application that uses OpenAI's API to generate tailored resumes and cover letters based on user input. This project is configured for both local development with Streamlit and deployment on Vercel.
+
+## Deployment Options
+- Live Streamlit: [https://ai-resume-builder.streamlit.app](https://ai-resume-builder.streamlit.app)
+- Vercel: Deploy your own instance following the instructions below
 
 ## Features
 
@@ -13,7 +16,7 @@ A web application that uses OpenAI's API to generate tailored resumes and cover 
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/ai-resume-builder.git
+   git clone https://github.com/ijonathans/ai-resume-builder.git
    cd ai-resume-builder
    ```
 
