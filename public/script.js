@@ -80,8 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('Sending request to API...');
             
+            // Get the current URL to determine if we're on localhost or deployed
+            const baseUrl = window.location.origin;
+            const apiUrl = `${baseUrl}/api`;
+            
+            console.log(`Using API URL: ${apiUrl}`);
+            
             // Make API request to our serverless function
-            const response = await fetch('/api', {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // If the response is empty or not valid JSON, handle the error
             if (!rawText || rawText.includes('FUNCTION_INVOCATION_FAILED') || rawText.includes('server error')) {
                 console.error('Server error response:', rawText);
-                alert('Server error occurred. Please try again later.');
+                alert('Server error occurred. This might be due to the OpenAI API key being invalid or the server having issues. Please check your API key and try again.');
                 return;
             }
             

@@ -1,4 +1,3 @@
-from http.server import BaseHTTPRequestHandler
 import json
 import os
 import requests
@@ -7,71 +6,58 @@ def handler(event, context):
     """
     Vercel serverless function handler for the API endpoint.
     """
+    # Set CORS headers for all responses
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+    }
+    
     # Handle CORS preflight requests
     if event.get('httpMethod') == 'OPTIONS':
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            },
+            'headers': headers,
             'body': ''
         }
     
-    # Handle POST request
+    # Ensure this is a POST request
     if event.get('httpMethod') != 'POST':
         return {
             'statusCode': 405,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            'headers': headers,
             'body': json.dumps({'error': 'Method not allowed'})
         }
     
     try:
         # Parse request body
-        request_body = event.get('body', '{}')
-        if isinstance(request_body, str):
-            body = json.loads(request_body)
-        else:
-            body = request_body
+        body = json.loads(event.get('body', '{}'))
         
         # Extract data from request
         skills = body.get('skills', '')
         experience = body.get('experience', '')
         job_description = body.get('job_description', '')
+        api_key = body.get('api_key', os.environ.get('OPENAI_API_KEY', ''))
         
-        # Get API key from environment or request
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key and 'api_key' in body:
-            api_key = body.get('api_key')
-        
+        # Validate inputs
         if not api_key:
             return {
                 'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                'headers': headers,
                 'body': json.dumps({'error': 'API key is required'})
             }
             
         if not all([skills, experience, job_description]):
             return {
                 'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                'headers': headers,
                 'body': json.dumps({'error': 'All fields are required'})
             }
-            
-        # Use direct OpenAI API call with requests
-        url = "https://api.openai.com/v1/chat/completions"
         
-        # Generate content
+        # Call OpenAI API
+        openai_url = "https://api.openai.com/v1/chat/completions"
+        
         prompt = f"""
         Using the following information, generate a professional resume and cover letter optimized for applicant tracking systems:
         
@@ -89,7 +75,7 @@ def handler(event, context):
         Separate the resume and cover letter with '---'.
         """
         
-        headers = {
+        openai_headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"
         }
@@ -104,29 +90,30 @@ def handler(event, context):
             "temperature": 0.7
         }
         
-        response = requests.post(url, headers=headers, json=payload)
-        response_data = response.json()
+        response = requests.post(openai_url, headers=openai_headers, json=payload)
         
+        # Handle OpenAI API response
         if response.status_code != 200:
+            error_message = response.json().get("error", {}).get("message", "Error calling OpenAI API")
             return {
                 'statusCode': response.status_code,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'error': response_data.get("error", {}).get("message", "Error calling OpenAI API")})
+                'headers': headers,
+                'body': json.dumps({'error': error_message})
             }
         
+        # Process the response
+        response_data = response.json()
         content = response_data["choices"][0]["message"]["content"].strip()
         
-        # Split content
+        # Split content into resume and cover letter
         if "---" in content:
             resume, cover_letter = content.split("---", 1)
         else:
-            resume_end = int(len(content) * 0.6)  # Fallback: first 60%
+            # Fallback if separator not found
+            resume_end = int(len(content) * 0.6)
             resume, cover_letter = content[:resume_end], content[resume_end:]
         
-        # Prepare response
+        # Return the result
         result = {
             "resume": resume.strip(),
             "cover_letter": cover_letter.strip()
@@ -134,19 +121,17 @@ def handler(event, context):
         
         return {
             'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            'headers': headers,
             'body': json.dumps(result)
         }
             
     except Exception as e:
+        # Log the error for debugging
+        error_message = str(e)
+        print(f"Error in handler: {error_message}")
+        
         return {
             'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'error': str(e)})
+            'headers': headers,
+            'body': json.dumps({'error': error_message})
         }
