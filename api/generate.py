@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-from openai import OpenAI
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -52,8 +52,8 @@ def handler(request):
                     "body": json.dumps({"error": "All fields are required"})
                 }
                 
-            # Initialize OpenAI client
-            client = OpenAI(api_key=api_key)
+            # Use direct OpenAI API call with requests instead of the OpenAI package
+            url = "https://api.openai.com/v1/chat/completions"
             
             # Generate content
             prompt = f"""
@@ -73,16 +73,35 @@ def handler(request):
             Separate the resume and cover letter with '---'.
             """
             
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+            
+            payload = {
+                "model": "gpt-3.5-turbo",
+                "messages": [
                     {"role": "system", "content": "You are a professional resume and cover letter writer with expertise in creating ATS-optimized content."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=2000,
-                temperature=0.7
-            )
-            content = response.choices[0].message.content.strip()
+                "max_tokens": 2000,
+                "temperature": 0.7
+            }
+            
+            response = requests.post(url, headers=headers, json=payload)
+            response_data = response.json()
+            
+            if response.status_code != 200:
+                return {
+                    "statusCode": response.status_code,
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": json.dumps({"error": response_data.get("error", {}).get("message", "Error calling OpenAI API")})
+                }
+            
+            content = response_data["choices"][0]["message"]["content"].strip()
             
             # Split content
             if "---" in content:
