@@ -96,61 +96,30 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('Response status:', response.status);
             
-            // Get the raw text first to debug
-            const rawText = await response.text();
-            console.log('Raw response:', rawText);
-            
-            // Try to parse as JSON
-            let responseData;
-            try {
-                responseData = JSON.parse(rawText);
-                console.log('Parsed response data:', responseData);
-            } catch (e) {
-                console.error('Error parsing JSON response:', e);
-                throw new Error(`Invalid JSON response: ${rawText.substring(0, 100)}...`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    alert(`Error: ${errorData.error || 'Failed to generate content'}`);
+                } catch (e) {
+                    alert(`Error: ${errorText || 'Failed to generate content'}`);
+                }
+                return;
             }
             
-            // Handle Vercel serverless function response format
-            if (response.ok) {
-                // Parse the response data
-                let data = responseData;
-                
-                // Handle nested response format (if the response is wrapped)
-                if (responseData.body && typeof responseData.body === 'string') {
-                    try {
-                        data = JSON.parse(responseData.body);
-                        console.log('Parsed body data:', data);
-                    } catch (e) {
-                        console.error('Error parsing response body:', e);
-                    }
-                }
-                
-                // Display results
-                resumeText.textContent = data.resume || '';
-                coverLetterText.textContent = data.cover_letter || '';
-                outputSection.style.display = 'block';
-                
-                // Scroll to results
-                outputSection.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                // Handle error response
-                let errorMessage = 'Failed to generate content';
-                
-                if (responseData.error) {
-                    errorMessage = responseData.error;
-                } else if (responseData.body && typeof responseData.body === 'string') {
-                    try {
-                        const parsedBody = JSON.parse(responseData.body);
-                        if (parsedBody.error) {
-                            errorMessage = parsedBody.error;
-                        }
-                    } catch (e) {
-                        console.error('Error parsing error response body:', e);
-                    }
-                }
-                
-                alert(`Error: ${errorMessage}`);
-            }
+            // Get the response as JSON directly
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            // Display results
+            resumeText.textContent = data.resume || '';
+            coverLetterText.textContent = data.cover_letter || '';
+            outputSection.style.display = 'block';
+            
+            // Scroll to results
+            outputSection.scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
             console.error('Error:', error);
             alert(`An error occurred: ${error.message}`);
