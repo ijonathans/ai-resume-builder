@@ -96,71 +96,30 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('Response status:', response.status);
             
-            // Get the raw text first to debug
-            const rawText = await response.text();
-            console.log('Raw response:', rawText);
-            
-            // Try to parse as JSON
-            let responseData;
-            try {
-                responseData = JSON.parse(rawText);
-                console.log('Parsed response data:', responseData);
-            } catch (e) {
-                console.error('Error parsing JSON response:', e);
-                alert(`Error: Invalid response from server. Please try again later.`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    alert(`Error: ${errorData.error || 'Failed to generate content'}`);
+                } catch (e) {
+                    alert(`Error: ${errorText || 'Failed to generate content'}`);
+                }
                 return;
             }
             
-            // Check if we have a successful response
-            if (responseData.statusCode === 200 || response.status === 200) {
-                // Get the actual data
-                let data;
-                
-                if (responseData.body) {
-                    // Parse the body if it's a string
-                    if (typeof responseData.body === 'string') {
-                        try {
-                            data = JSON.parse(responseData.body);
-                        } catch (e) {
-                            console.error('Error parsing response body:', e);
-                            data = { error: 'Failed to parse response' };
-                        }
-                    } else {
-                        data = responseData.body;
-                    }
-                } else {
-                    // If there's no body, use the response data directly
-                    data = responseData;
-                }
-                
-                console.log('Final data:', data);
-                
-                // Display results
-                resumeText.textContent = data.resume || '';
-                coverLetterText.textContent = data.cover_letter || '';
-                outputSection.style.display = 'block';
-                
-                // Scroll to results
-                outputSection.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                // Handle error response
-                let errorMessage = 'Failed to generate content';
-                
-                if (responseData.body && typeof responseData.body === 'string') {
-                    try {
-                        const bodyData = JSON.parse(responseData.body);
-                        if (bodyData.error) {
-                            errorMessage = bodyData.error;
-                        }
-                    } catch (e) {
-                        console.error('Error parsing error body:', e);
-                    }
-                } else if (responseData.error) {
-                    errorMessage = responseData.error;
-                }
-                
-                alert(`Error: ${errorMessage}`);
-            }
+            // Get the response as JSON directly
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            // Display results
+            resumeText.textContent = data.resume || '';
+            coverLetterText.textContent = data.cover_letter || '';
+            outputSection.style.display = 'block';
+            
+            // Scroll to results
+            outputSection.scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
             console.error('Error:', error);
             alert(`An error occurred: ${error.message}`);
