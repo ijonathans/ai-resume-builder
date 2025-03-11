@@ -97,8 +97,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Response status:', response.status);
             
             // Get the raw text first to debug
-            const rawText = await response.text();
-            console.log('Raw response:', rawText);
+            let rawText;
+            try {
+                rawText = await response.text();
+                console.log('Raw response:', rawText);
+            } catch (e) {
+                console.error('Error reading response text:', e);
+                alert('Error reading response from server. Please try again later.');
+                return;
+            }
+            
+            // If the response is empty or not valid JSON, handle the error
+            if (!rawText || rawText.includes('FUNCTION_INVOCATION_FAILED') || rawText.includes('server error')) {
+                console.error('Server error response:', rawText);
+                alert('Server error occurred. Please try again later.');
+                return;
+            }
             
             // Try to parse as JSON
             let data;
@@ -107,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Parsed response data:', data);
             } catch (e) {
                 console.error('Error parsing JSON response:', e);
-                alert(`Error: Invalid response from server. Please try again later.`);
+                alert('Error: Invalid response from server. Please try again later.');
                 return;
             }
             
@@ -134,6 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 console.log('Final data:', result);
+                
+                if (result.error) {
+                    alert(`Error: ${result.error}`);
+                    return;
+                }
                 
                 // Display results
                 resumeText.textContent = result.resume || '';

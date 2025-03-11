@@ -4,33 +4,39 @@ import os
 import requests
 
 def handler(event, context):
-    # Extract request data
+    """
+    Vercel serverless function handler for the API endpoint.
+    """
+    # Handle CORS preflight requests
+    if event.get('httpMethod') == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            'body': ''
+        }
+    
+    # Handle POST request
+    if event.get('httpMethod') != 'POST':
+        return {
+            'statusCode': 405,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Method not allowed'})
+        }
+    
     try:
-        # Check if it's an OPTIONS request (CORS preflight)
-        if event.get('httpMethod') == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type'
-                },
-                'body': ''
-            }
-        
-        # Handle POST request
-        if event.get('httpMethod') != 'POST':
-            return {
-                'statusCode': 405,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'error': 'Method not allowed'})
-            }
-        
         # Parse request body
-        body = json.loads(event.get('body', '{}'))
+        request_body = event.get('body', '{}')
+        if isinstance(request_body, str):
+            body = json.loads(request_body)
+        else:
+            body = request_body
         
         # Extract data from request
         skills = body.get('skills', '')
