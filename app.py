@@ -3,20 +3,29 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# Load environment variables (optional, for local testing)
-load_dotenv()
-
-# Page config (safe to run at startup)
-st.set_page_config(page_title="AI Resume and Cover Letter Builder", page_icon="📝", layout="wide")
-
-# Debug: Confirm app starts
-st.sidebar.write("App initialized successfully")
-
 def main():
+    # Basic startup confirmation
+    st.sidebar.write("App starting...")
+
+    # Load environment variables (safe even if no .env)
+    try:
+        load_dotenv()
+        st.sidebar.write("dotenv loaded")
+    except Exception as e:
+        st.sidebar.write(f"dotenv failed: {e}")
+
+    # Page config inside main to catch early issues
+    try:
+        st.set_page_config(page_title="AI Resume and Cover Letter Builder", page_icon="📝", layout="wide")
+        st.sidebar.write("Page config set")
+    except Exception as e:
+        st.sidebar.error(f"Config error: {e}")
+        return
+
     st.title("AI Resume and Cover Letter Builder")
     st.markdown("Generate ATS-optimized resumes and cover letters using AI.")
 
-    # API key handling with debug output
+    # API key handling
     api_key = os.getenv("OPENAI_API_KEY")
     st.sidebar.write(f"Env API Key: {'Set' if api_key else 'Not set'}")
     if not api_key and "OPENAI_API_KEY" in st.secrets:
